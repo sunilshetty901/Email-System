@@ -1348,40 +1348,62 @@ async function loadSheet() {
     return;
   }
 
-  // Extract sheet ID from any Google Sheets URL format
   const match = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (!match) {
-    statusEl.innerHTML = '<div class="alert alert-error">❌ Invalid Google Sheet URL. Cannot find sheet ID.</div>';
+    statusEl.innerHTML = '<div class="alert alert-error">❌ Invalid Google Sheet URL.</div>';
     return;
   }
 
   const sheetId = match[1];
-  // Get gid (tab id) if present, default to 0
   const gidMatch = raw.match(/gid=(\d+)/);
   const gid = gidMatch ? gidMatch[1] : '0';
-
   const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
-  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`;
+
+  // Multiple proxies to try in order
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`,
+    `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`,
+    `https://thingproxy.freeboard.io/fetch/${csvUrl}`,
+  ];
 
   statusEl.innerHTML = '<div class="alert alert-info">⏳ Loading sheet...</div>';
 
-  try {
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const text = await response.text();
-    if (!text || text.trim().length === 0) throw new Error('Empty response');
+  let lastError = '';
+  for (const proxyUrl of proxies) {
+    try {
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const text = await response.text();
+      if (!text || text.trim().length === 0) throw new Error('Empty response');
+      // Check if we got an error page instead of CSV
+      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        throw new Error('Got HTML instead of CSV — sheet may not be published');
+      }
 
-    const rows = parseCSV(text);
-    if (rows.length < 2) {
-      statusEl.innerHTML = '<div class="alert alert-warning">⚠️ Sheet loaded but no data rows found. Check your sheet has data below the header row.</div>';
-      return;
+      const rows = parseCSV(text);
+      if (rows.length < 2) {
+        statusEl.innerHTML = '<div class="alert alert-warning">⚠️ Sheet loaded but no data rows found.</div>';
+        return;
+      }
+
+      importBooksFromCSV(rows);
+      statusEl.innerHTML = `<div class="alert alert-success">✅ Successfully loaded ${rows.length - 1} books from sheet!</div>`;
+      return; // success — stop trying proxies
+
+    } catch (err) {
+      lastError = err.message;
+      continue; // try next proxy
     }
-
-    importBooksFromCSV(rows);
-    statusEl.innerHTML = `<div class="alert alert-success">✅ Successfully loaded ${rows.length - 1} books from sheet!</div>`;
-  } catch (err) {
-    statusEl.innerHTML = `<div class="alert alert-error">❌ Failed to load sheet: ${err.message}. Make sure sharing is set to "Anyone with the link".</div>`;
   }
+
+  // All proxies failed
+  statusEl.innerHTML = `<div class="alert alert-error">❌ All fetch attempts failed: ${lastError}<br><br>
+    Please make sure:<br>
+    1. Sheet is shared → <strong>Anyone with the link (Viewer)</strong><br>
+    2. File → Share → <strong>Publish to web → CSV</strong><br>
+    3. Try opening this URL directly in a new tab:<br>
+    <a href="${csvUrl}" target="_blank" style="color:inherit;word-break:break-all;">${csvUrl}</a>
+  </div>`;
 }
 
 // ===== LOGS =====
