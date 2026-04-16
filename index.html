@@ -683,7 +683,7 @@
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <input type="text" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1; min-width:240px;"
-            value="https://docs.google.com/spreadsheets/d/1YTgAEa_EPKpXJzSUX6XD2p_17JLlO68-CKgDWMjwWUM/edit?gid=0#gid=0">
+           value="https://docs.google.com/spreadsheets/d/1YTgAEa_EPKpXJzSUX6XD2p_17JLlO68-CKgDWMjwWUM/export?format=csv&gid=0">
           <button class="btn btn-primary" onclick="loadSheet()">🔗 Load Sheet</button>
           <button class="btn btn-outline" onclick="showPage('books')">📖 View Books</button>
         </div>
@@ -1348,25 +1348,31 @@ async function loadSheet() {
     return;
   }
 
-  const match = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (!match) {
+  // Build CSV URL — handle both /edit and /export formats
+  let csvUrl = '';
+  const match = raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/); // 20+ chars to skip the lone "e"
+  if (match) {
+    const sheetId = match[1];
+    const gidMatch = raw.match(/[#&?]gid=(\d+)/);
+    const gid = gidMatch ? gidMatch[1] : '0';
+    csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+  } else if (raw.includes('export?format=csv')) {
+    csvUrl = raw; // already a CSV export URL
+  } else {
     statusEl.innerHTML = '<div class="alert alert-error">❌ Invalid Google Sheet URL.</div>';
     return;
   }
 
-  const sheetId = match[1];
-  const gidMatch = raw.match(/gid=(\d+)/);
-  const gid = gidMatch ? gidMatch[1] : '0';
-  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+  statusEl.innerHTML = `<div class="alert alert-info">⏳ Loading... <small style="word-break:break-all">${csvUrl}</small></div>`;
 
-  // Multiple proxies to try in order
+  // Use Google's own JSONP-style endpoint via a sheets-to-JSON trick
+  const jsonUrl = csvUrl.replace('export?format=csv', 'gviz/tq?tqx=out:csv&sheet=Sheet1&');
+
   const proxies = [
+    `https://opensheet.elk.sh/${raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/)?.[1]}/Sheet1`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`,
     `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`,
-    `https://thingproxy.freeboard.io/fetch/${csvUrl}`,
   ];
-
-  statusEl.innerHTML = '<div class="alert alert-info">⏳ Loading sheet...</div>';
 
   let lastError = '';
   for (const proxyUrl of proxies) {
@@ -1375,37 +1381,23 @@ async function loadSheet() {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const text = await response.text();
       if (!text || text.trim().length === 0) throw new Error('Empty response');
-      // Check if we got an error page instead of CSV
-      if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-        throw new Error('Got HTML instead of CSV — sheet may not be published');
-      }
+      if (text.trim().startsWith('<')) throw new Error('Got HTML not CSV');
 
       const rows = parseCSV(text);
       if (rows.length < 2) {
         statusEl.innerHTML = '<div class="alert alert-warning">⚠️ Sheet loaded but no data rows found.</div>';
         return;
       }
-
       importBooksFromCSV(rows);
-      statusEl.innerHTML = `<div class="alert alert-success">✅ Successfully loaded ${rows.length - 1} books from sheet!</div>`;
-      return; // success — stop trying proxies
-
+      statusEl.innerHTML = `<div class="alert alert-success">✅ Loaded ${rows.length - 1} books successfully!</div>`;
+      return;
     } catch (err) {
       lastError = err.message;
-      continue; // try next proxy
     }
   }
 
-  // All proxies failed
-  statusEl.innerHTML = `<div class="alert alert-error">❌ All fetch attempts failed: ${lastError}<br><br>
-    Please make sure:<br>
-    1. Sheet is shared → <strong>Anyone with the link (Viewer)</strong><br>
-    2. File → Share → <strong>Publish to web → CSV</strong><br>
-    3. Try opening this URL directly in a new tab:<br>
-    <a href="${csvUrl}" target="_blank" style="color:inherit;word-break:break-all;">${csvUrl}</a>
-  </div>`;
+  statusEl.innerHTML = `<div class="alert alert-error">❌ Failed: ${lastError}<br>CSV URL tried: <a href="${csvUrl}" target="_blank">${csvUrl}</a></div>`;
 }
-
 // ===== LOGS =====
 function addLog(type, msg) {
   logs.unshift({type, msg, time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
