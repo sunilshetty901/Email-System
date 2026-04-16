@@ -1356,7 +1356,7 @@ async function loadSheet() {
     const gidMatch = raw.match(/[#&?]gid=(\d+)/);
     const gid = gidMatch ? gidMatch[1] : '0';
     csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
-  } else if (raw.includes('export?format=csv')) {
+  } else if (raw.includes('export?format=csv') || raw.includes('pub?output=csv') || raw.includes('/d/e/')) {
     csvUrl = raw; // already a CSV export URL
   } else {
     statusEl.innerHTML = '<div class="alert alert-error">❌ Invalid Google Sheet URL.</div>';
