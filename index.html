@@ -1338,6 +1338,119 @@ async function sendNotifications() {
   alert(`✅ Done! ${sent} email(s) sent. ${!ejs ? '\n\n(Demo mode — add EmailJS credentials in Settings to send real emails)' : ''}`);
 }
 
+// ===== CSV PARSING =====
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 1) return [];
+
+  // Parse a single CSV line, respecting quoted fields
+  function parseLine(line) {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        // Handle escaped double-quotes inside a quoted field ("")
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === ',' && !inQuotes) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    values.push(current.trim());
+    return values;
+  }
+
+  const headers = parseLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+
+  return lines.slice(1).map(line => {
+    if (!line.trim()) return null;
+    const values = parseLine(line);
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = (values[i] || '').replace(/^"|"$/g, '').trim();
+    });
+    return obj;
+  }).filter(Boolean);
+}
+
+function importBooksFromCSV(rows) {
+  // Flexible header mapping (case-insensitive, with common aliases)
+  const headerMap = {
+    title:       ['title', 'book title', 'booktitle', 'name'],
+    author:      ['author', 'authors', 'writer'],
+    isbn:        ['isbn', 'isbn13', 'isbn-13', 'isbn10', 'isbn-10'],
+    dept:        ['department', 'dept', 'subject', 'category'],
+    acc:         ['accession no', 'accession number', 'acc no', 'acc', 'accno', 'accession'],
+    date:        ['date added', 'date', 'dateadded', 'added on', 'added'],
+    pub:         ['publisher', 'pub', 'publication'],
+    year:        ['year', 'publication year', 'pub year', 'year published'],
+    edition:     ['edition', 'ed'],
+  };
+
+  function findCol(headers, aliases) {
+    const lower = headers.map(h => h.toLowerCase());
+    for (const alias of aliases) {
+      const idx = lower.findIndex(h => h === alias || h.includes(alias));
+      if (idx !== -1) return headers[idx];
+    }
+    return null;
+  }
+
+  if (!rows || rows.length === 0) return;
+  const headers = Object.keys(rows[0]);
+  const colMap = {};
+  for (const [field, aliases] of Object.entries(headerMap)) {
+    colMap[field] = findCol(headers, aliases);
+  }
+
+  const imported = rows
+    .map(row => {
+      const title  = colMap.title  ? row[colMap.title]  : '';
+      const author = colMap.author ? row[colMap.author] : '';
+      const dept   = colMap.dept   ? row[colMap.dept]   : '';
+      if (!title) return null; // skip rows with no title
+      return {
+        id:     Date.now() + Math.random(),
+        title,
+        author:  author  || '',
+        isbn:    colMap.isbn    ? row[colMap.isbn]    : '',
+        dept:    dept    || 'General',
+        acc:     colMap.acc     ? row[colMap.acc]     : '',
+        date:    colMap.date    ? row[colMap.date]    : new Date().toISOString().split('T')[0],
+        pub:     colMap.pub     ? row[colMap.pub]     : '',
+        year:    colMap.year    ? row[colMap.year]    : '',
+        edition: colMap.edition ? row[colMap.edition] : '',
+        status:  'new',
+        cover:   '',
+      };
+    })
+    .filter(Boolean);
+
+  // Merge: add books that aren't already present (matched by title+author)
+  const existing = new Set(books.map(b => (b.title + '|' + b.author).toLowerCase()));
+  let added = 0;
+  for (const book of imported) {
+    const key = (book.title + '|' + book.author).toLowerCase();
+    if (!existing.has(key)) {
+      books.push(book);
+      existing.add(key);
+      added++;
+    }
+  }
+  updateStats();
+  renderBooks();
+  addLog('info', `Sheet sync: ${added} new book(s) imported, ${imported.length - added} duplicate(s) skipped`);
+}
+
 // ===== SHEET LOADING =====
 async function loadSheet() {
   const raw = document.getElementById('sheet-url').value.trim();
