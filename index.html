@@ -1340,58 +1340,48 @@ async function sendNotifications() {
 
 // ===== SHEET LOADING =====
 async function loadSheet() {
-  const url = document.getElementById('sheet-url').value.trim();
-  if(!url){ alert('Please paste your Google Sheet URL.'); return; }
-  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if(!match){ document.getElementById('sheet-status').innerHTML='<div class="alert alert-error">❌ Invalid Google Sheet URL</div>'; return; }
-  const sheetId = match[1];
-  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
-  document.getElementById('sheet-status').innerHTML='<div class="alert alert-info">⏳ Loading sheet data...</div>';
-  try {
-    const proxyUrl = 'https://corsproxy.io/?';
-    const response = await fetch(proxyUrl + encodeURIComponent(sheetUrl));
-    if(!res.ok) throw new Error('Could not fetch sheet. Make sure sharing is set to "Anyone with the link".');
-    const text = await res.text();
-    const rows = parseCSV(text);
-    if(rows.length < 2) throw new Error('Sheet appears to be empty.');
-    const headers = rows[0].map(h=>h.toLowerCase().trim());
-    const imported = rows.slice(1).filter(r=>r.some(c=>c)).map((r,i) => {
-      const get = (keys) => { for(const k of keys){ const idx=headers.findIndex(h=>h.includes(k)); if(idx>=0 && r[idx]) return r[idx].trim(); } return ''; };
-      return {
-        id: Date.now()+i,
-        title: get(['title','book']),
-        author: get(['author']),
-        isbn: get(['isbn']),
-        dept: get(['dept','department','subject']),
-        acc: get(['acc','accession']),
-        pub: get(['pub','publisher']),
-        year: get(['year']),
-        date: get(['date']) || new Date().toISOString().split('T')[0],
-        status: 'new', cover: ''
-      };
-    }).filter(b=>b.title);
-    if(imported.length===0) throw new Error('No book data found. Check your column headers (Title, Author, Department required).');
-    const newImported = imported.filter(imp => !books.find(b=>b.title===imp.title&&b.author===imp.author));
-    books = [...books, ...newImported];
-    updateStats();
-    document.getElementById('sheet-status').innerHTML=`<div class="alert alert-success">✅ Imported ${newImported.length} new book(s) from Google Sheet (${imported.length} total rows found)</div>`;
-    addLog('success', `Sheet synced: ${newImported.length} new book(s) imported`);
-  } catch(e) {
-    document.getElementById('sheet-status').innerHTML=`<div class="alert alert-error">❌ ${e.message}</div>`;
-  }
-}
+  const raw = document.getElementById('sheet-url').value.trim();
+  const statusEl = document.getElementById('sheet-status');
 
-function parseCSV(text) {
-  const rows=[]; let row=[], cur='', inQ=false;
-  for(let i=0;i<text.length;i++) {
-    const c=text[i];
-    if(c==='"'){ if(inQ&&text[i+1]==='"'){cur+='"';i++;}else inQ=!inQ; }
-    else if(c===','&&!inQ){ row.push(cur);cur=''; }
-    else if((c==='\n'||c==='\r')&&!inQ){ if(c==='\r'&&text[i+1]==='\n')i++; row.push(cur);rows.push(row);row=[];cur=''; }
-    else cur+=c;
+  if (!raw) {
+    statusEl.innerHTML = '<div class="alert alert-error">❌ Please enter a Google Sheet URL.</div>';
+    return;
   }
-  if(cur||row.length) { row.push(cur); rows.push(row); }
-  return rows.filter(r=>r.length>1||r[0]);
+
+  // Extract sheet ID from any Google Sheets URL format
+  const match = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (!match) {
+    statusEl.innerHTML = '<div class="alert alert-error">❌ Invalid Google Sheet URL. Cannot find sheet ID.</div>';
+    return;
+  }
+
+  const sheetId = match[1];
+  // Get gid (tab id) if present, default to 0
+  const gidMatch = raw.match(/gid=(\d+)/);
+  const gid = gidMatch ? gidMatch[1] : '0';
+
+  const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`;
+
+  statusEl.innerHTML = '<div class="alert alert-info">⏳ Loading sheet...</div>';
+
+  try {
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    if (!text || text.trim().length === 0) throw new Error('Empty response');
+
+    const rows = parseCSV(text);
+    if (rows.length < 2) {
+      statusEl.innerHTML = '<div class="alert alert-warning">⚠️ Sheet loaded but no data rows found. Check your sheet has data below the header row.</div>';
+      return;
+    }
+
+    importBooksFromCSV(rows);
+    statusEl.innerHTML = `<div class="alert alert-success">✅ Successfully loaded ${rows.length - 1} books from sheet!</div>`;
+  } catch (err) {
+    statusEl.innerHTML = `<div class="alert alert-error">❌ Failed to load sheet: ${err.message}. Make sure sharing is set to "Anyone with the link".</div>`;
+  }
 }
 
 // ===== LOGS =====
