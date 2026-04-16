@@ -1369,10 +1369,8 @@ async function loadSheet() {
   const jsonUrl = csvUrl.replace('export?format=csv', 'gviz/tq?tqx=out:csv&sheet=Sheet1&');
 
   const proxies = [
-    `https://opensheet.elk.sh/${raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/)?.[1]}/Sheet1`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`,
-  ];
+  `https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?url=${encodeURIComponent(csvUrl)}`,
+];
 
   let lastError = '';
   for (const proxyUrl of proxies) {
