@@ -1348,7 +1348,8 @@ async function loadSheet() {
   const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
   document.getElementById('sheet-status').innerHTML='<div class="alert alert-info">⏳ Loading sheet data...</div>';
   try {
-    const res = await fetch(csvUrl);
+    const proxyUrl = 'https://corsproxy.io/?';
+    const response = await fetch(proxyUrl + encodeURIComponent(sheetUrl));
     if(!res.ok) throw new Error('Could not fetch sheet. Make sure sharing is set to "Anyone with the link".');
     const text = await res.text();
     const rows = parseCSV(text);
