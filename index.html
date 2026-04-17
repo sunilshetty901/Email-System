@@ -4,36 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Library New Arrivals — Email Notification System</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
-    --navy: #1a3a5c;
-    --navy-dark: #0f2540;
-    --gold: #c9933a;
-    --gold-light: #f0d89a;
-    --cream: #faf7f2;
+    --navy: #1e3a5f;
+    --navy-dark: #0d1f35;
+    --navy-mid: #2a4a72;
+    --gold: #d4922a;
+    --gold-light: #f5e4bb;
+    --cream: #f6f4f0;
     --white: #ffffff;
-    --gray-100: #f5f5f5;
-    --gray-200: #e8e8e8;
-    --gray-400: #aaaaaa;
-    --gray-600: #666666;
-    --gray-800: #333333;
-    --success: #2e7d52;
-    --success-bg: #e8f5ee;
-    --danger: #c0392b;
+    --gray-100: #f2f2f2;
+    --gray-200: #e4e4e4;
+    --gray-400: #a8a8a8;
+    --gray-600: #5e5e5e;
+    --gray-800: #2a2a2a;
+    --success: #1e7a4a;
+    --success-bg: #e4f5ec;
+    --danger: #b5301f;
     --danger-bg: #fdecea;
-    --shadow-sm: 0 2px 8px rgba(0,0,0,0.07);
-    --shadow-md: 0 6px 24px rgba(0,0,0,0.10);
-    --shadow-lg: 0 12px 40px rgba(0,0,0,0.13);
-    --radius: 12px;
-    --radius-sm: 8px;
+    --shadow-sm: 0 2px 10px rgba(0,0,0,0.06);
+    --shadow-md: 0 6px 24px rgba(0,0,0,0.09);
+    --shadow-lg: 0 14px 44px rgba(0,0,0,0.12);
+    --radius: 14px;
+    --radius-sm: 9px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: var(--cream);
     color: var(--gray-800);
     min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
   }
   /* --- TOP BAR --- */
   .topbar {
@@ -60,7 +65,7 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 16px;
   }
-  .topbar-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; }
+  .topbar-title { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
   .topbar-subtitle { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; text-transform: uppercase; }
   .topbar-actions { display: flex; gap: 10px; align-items: center; }
   .badge-count {
@@ -90,32 +95,36 @@
     overflow-y: auto;
   }
   .sidebar-section-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.35);
     padding: 0 1.5rem;
-    margin: 1.25rem 0 0.5rem;
+    margin: 1.5rem 0 0.4rem;
+    font-family: 'Inter', sans-serif;
   }
   .sidebar-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0.65rem 1.5rem;
-    font-size: 14px;
-    color: rgba(255,255,255,0.75);
+    padding: 0.6rem 1.5rem;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
     cursor: pointer;
     border-left: 3px solid transparent;
     transition: all 0.15s;
     text-decoration: none;
+    letter-spacing: -0.01em;
   }
   .sidebar-item:hover, .sidebar-item.active {
     background: rgba(255,255,255,0.08);
     color: white;
     border-left-color: var(--gold);
   }
-  .sidebar-item .icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-item .icon { width: 20px; text-align: center; display:flex; align-items:center; justify-content:center; }
+  .sidebar-item .icon svg { width: 16px; height: 16px; stroke-width: 1.8; }
   .sidebar-badge {
     margin-left: auto;
     background: rgba(201,147,58,0.25);
@@ -141,7 +150,7 @@
     flex-wrap: wrap;
     gap: 1rem;
   }
-  .page-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--navy-dark); }
+  .page-title { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 900; color: var(--navy-dark); letter-spacing: -0.03em; line-height: 1.1; }
   .page-subtitle { font-size: 13px; color: var(--gray-600); margin-top: 4px; }
 
   /* --- BUTTONS --- */
@@ -156,7 +165,7 @@
     cursor: pointer;
     border: none;
     transition: all 0.15s;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
   .btn-primary { background: var(--navy); color: white; }
   .btn-primary:hover { background: var(--navy-dark); }
@@ -179,14 +188,20 @@
     border: 1px solid rgba(0,0,0,0.05);
   }
   .card-title {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--navy-dark);
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 8px;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 11px;
+    color: var(--gray-600);
   }
+  .card-title svg { color: var(--gold); }
 
   /* --- STATS ROW --- */
   .stats-grid {
@@ -203,7 +218,7 @@
     border: 1px solid rgba(0,0,0,0.05);
   }
   .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-600); margin-bottom: 6px; }
-  .stat-value { font-size: 28px; font-weight: 600; font-family: 'Playfair Display', serif; color: var(--navy-dark); }
+  .stat-value { font-size: 32px; font-weight: 900; font-family: 'Fraunces', serif; color: var(--navy-dark); letter-spacing: -0.04em; }
   .stat-sub { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
   .stat-icon { font-size: 20px; float: right; margin-top: -4px; }
 
@@ -217,7 +232,7 @@
     border: 1.5px solid var(--gray-200);
     border-radius: var(--radius-sm);
     font-size: 14px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     color: var(--gray-800);
     background: white;
     transition: border-color 0.15s;
@@ -300,10 +315,10 @@
     text-transform: uppercase;
     color: rgba(255,255,255,0.55);
     margin-bottom: 8px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
   .ep-header-title {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 30px;
     font-weight: 700;
     color: white;
@@ -320,7 +335,7 @@
     text-transform: uppercase;
     padding: 4px 14px;
     border-radius: 20px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     margin-top: 10px;
   }
   .ep-wave {
@@ -336,7 +351,7 @@
     font-size: 14px;
     line-height: 1.8;
     color: #444;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     border-bottom: 1px solid #f0f0f0;
   }
   .ep-books {
@@ -349,7 +364,7 @@
     text-transform: uppercase;
     color: var(--gold);
     margin-bottom: 1rem;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
   .ep-book-item {
     display: flex;
@@ -371,8 +386,8 @@
     background: var(--gray-100);
   }
   .ep-book-info { flex: 1; }
-  .ep-book-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: #1a3a5c; margin-bottom: 3px; }
-  .ep-book-author { font-size: 12px; color: #888; font-family: 'DM Sans', sans-serif; margin-bottom: 6px; }
+  .ep-book-title { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 700; color: #1a3a5c; margin-bottom: 3px; }
+  .ep-book-author { font-size: 12px; color: #888; font-family: 'Inter', sans-serif; margin-bottom: 6px; }
   .ep-book-meta { display: flex; gap: 8px; flex-wrap: wrap; }
   .ep-book-tag {
     background: #e8eef7;
@@ -380,10 +395,10 @@
     font-size: 10px;
     padding: 2px 8px;
     border-radius: 10px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 500;
   }
-  .ep-book-accession { font-size: 11px; color: #aaa; font-family: 'DM Sans', sans-serif; margin-top: 6px; }
+  .ep-book-accession { font-size: 11px; color: #aaa; font-family: 'Inter', sans-serif; margin-top: 6px; }
   .ep-cta {
     margin: 0.5rem 0;
     text-align: center;
@@ -400,7 +415,7 @@
     font-size: 14px;
     font-weight: 600;
     text-decoration: none;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     letter-spacing: 0.02em;
   }
   .ep-footer {
@@ -409,7 +424,7 @@
     text-align: center;
     font-size: 11px;
     color: #aaa;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     line-height: 1.7;
     border-top: 1px solid #eee;
   }
@@ -442,7 +457,7 @@
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     transition: all 0.15s;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
   .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
   .tab-content { display: none; }
@@ -471,7 +486,7 @@
     position: relative;
   }
   .modal-title {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 20px;
     font-weight: 700;
     color: var(--navy-dark);
@@ -576,7 +591,7 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-brand">
-    <div class="topbar-icon">📚</div>
+    <div class="topbar-icon"><i data-lucide="library" style="width:18px;height:18px;color:white;"></i></div>
     <div>
       <div class="topbar-title">LibraryAlert</div>
       <div class="topbar-subtitle">New Arrivals Notification System</div>
@@ -584,7 +599,7 @@
   </div>
   <div class="topbar-actions">
     <span id="pending-badge" class="badge-count">3 pending</span>
-    <button class="btn btn-gold btn-sm" onclick="openSendModal()">⚡ Send Notifications</button>
+    <button class="btn btn-gold btn-sm" onclick="openSendModal()"><i data-lucide="send" style="width:14px;height:14px;"></i> Send Notifications</button>
   </div>
 </div>
 
@@ -594,31 +609,33 @@
   <aside class="sidebar">
     <div class="sidebar-section-label">Main</div>
     <a class="sidebar-item active" onclick="showPage('dashboard')">
-      <span class="icon">📊</span> Dashboard
+      <span class="icon"><i data-lucide="layout-dashboard"></i></span> Dashboard
     </a>
     <a class="sidebar-item" onclick="showPage('books')">
-      <span class="icon">📖</span> Book Entries
+      <span class="icon"><i data-lucide="book-open"></i></span> Book Entries
       <span class="sidebar-badge" id="sb-books">12</span>
     </a>
     <a class="sidebar-item" onclick="showPage('faculty')">
-      <span class="icon">👩‍🏫</span> Faculty & Departments
+    <a class="sidebar-item" onclick="showPage('faculty')">
+      <span class="icon"><i data-lucide="users"></i></span> Faculty &amp; Departments
       <span class="sidebar-badge" id="sb-faculty">8</span>
     </a>
 
     <div class="sidebar-section-label">Notifications</div>
     <a class="sidebar-item" onclick="showPage('compose')">
-      <span class="icon">✉️</span> Compose & Preview
+    <a class="sidebar-item" onclick="showPage('compose')">
+      <span class="icon"><i data-lucide="mail"></i></span> Compose &amp; Preview
     </a>
     <a class="sidebar-item" onclick="showPage('logs')">
-      <span class="icon">📋</span> Send Logs
+      <span class="icon"><i data-lucide="scroll-text"></i></span> Send Logs
     </a>
 
     <div class="sidebar-section-label">System</div>
     <a class="sidebar-item" onclick="showPage('settings')">
-      <span class="icon">⚙️</span> Settings
+      <span class="icon"><i data-lucide="settings"></i></span> Settings
     </a>
     <a class="sidebar-item" onclick="showPage('howto')">
-      <span class="icon">❓</span> How It Works
+      <span class="icon"><i data-lucide="help-circle"></i></span> How It Works
     </a>
   </aside>
 
@@ -632,38 +649,38 @@
           <div class="page-title">Dashboard</div>
           <div class="page-subtitle">Overview of your library notification system</div>
         </div>
-        <button class="btn btn-gold" onclick="openSendModal()">⚡ Send Notifications Now</button>
+        <button class="btn btn-gold" onclick="openSendModal()"><i data-lucide="send" style="width:14px;height:14px;"></i> Send Now</button>
       </div>
 
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Total Books</div>
-          <div class="stat-icon">📚</div>
+          <div class="stat-icon"><i data-lucide="library" style="width:22px;height:22px;color:var(--navy);"></i></div>
           <div class="stat-value" id="stat-total">12</div>
           <div class="stat-sub">in collection</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">New Arrivals</div>
-          <div class="stat-icon" style="color:var(--gold)">✨</div>
+          <div class="stat-icon"><i data-lucide="sparkles" style="width:22px;height:22px;color:var(--gold);"></i></div>
           <div class="stat-value" id="stat-new" style="color:var(--gold)">3</div>
           <div class="stat-sub">unsent notifications</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Faculty Members</div>
-          <div class="stat-icon">👥</div>
+          <div class="stat-icon"><i data-lucide="users" style="width:22px;height:22px;color:var(--navy);"></i></div>
           <div class="stat-value" id="stat-faculty">8</div>
           <div class="stat-sub">across departments</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Emails Sent</div>
-          <div class="stat-icon" style="color:var(--success)">✔</div>
+          <div class="stat-icon"><i data-lucide="check-circle" style="width:22px;height:22px;color:var(--success);"></i></div>
           <div class="stat-value" id="stat-sent" style="color:var(--success)">24</div>
           <div class="stat-sub">this month</div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">📋 Recent New Arrivals (Unsent)</div>
+        <div class="card-title"><i data-lucide="book-marked" style="width:16px;height:16px;color:var(--gold);"></i> Recent New Arrivals (Unsent)</div>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -677,17 +694,33 @@
       </div>
 
       <div class="card">
-        <div class="card-title">📡 Connect Google Sheet</div>
+        <div class="card-title"><i data-lucide="refresh-cw" style="width:16px;height:16px;color:var(--gold);"></i> Google Sheet — Auto Sync</div>
         <div class="alert alert-info">
-          ℹ️ Paste your Google Sheet URL to auto-import book entries. Make sure your sheet is published or shared (anyone with link can view).
+          ℹ️ Paste your Google Sheet URL once. Enable Auto-Sync to automatically check for new books and send notifications.
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <input type="text" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1; min-width:240px;"
-           value="https://docs.google.com/spreadsheets/d/1YTgAEa_EPKpXJzSUX6XD2p_17JLlO68-CKgDWMjwWUM/export?format=csv&gid=0">
-          <button class="btn btn-primary" onclick="loadSheet()">🔗 Load Sheet</button>
-          <button class="btn btn-outline" onclick="showPage('books')">📖 View Books</button>
+          <input type="text" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/..." style="flex:1; min-width:240px;">
+          <button class="btn btn-primary" onclick="saveSheetUrl()"><i data-lucide="save" style="width:14px;height:14px;"></i> Save URL</button>
+          <button class="btn btn-outline" onclick="manualSync()"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Sync Now</button>
         </div>
         <div id="sheet-status" style="margin-top:10px;"></div>
+        <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--gray-200); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:var(--navy-dark);">🔁 Auto-Sync &amp; Auto-Notify</div>
+            <div style="font-size:12px; color:var(--gray-600); margin-top:2px;">Checks sheet every <select id="sync-interval" onchange="updateSyncInterval()" style="padding:2px 6px; font-size:12px; border:1px solid var(--gray-200); border-radius:4px;">
+              <option value="5">5 min</option>
+              <option value="10" selected>10 min</option>
+              <option value="15">15 min</option>
+              <option value="30">30 min</option>
+              <option value="60">1 hour</option>
+            </select> — sends emails automatically when new books found</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="auto-sync-status" style="font-size:12px; color:var(--gray-400);">⏸ Stopped</span>
+            <button class="btn btn-gold btn-sm" id="auto-sync-btn" onclick="toggleAutoSync()"><i data-lucide="play" style="width:13px;height:13px;"></i> Start Auto-Sync</button>
+          </div>
+        </div>
+        <div id="last-sync-info" style="font-size:11px; color:var(--gray-400); margin-top:8px;"></div>
       </div>
     </div>
 
@@ -699,8 +732,8 @@
           <div class="page-subtitle">Manage new arrivals — imported from sheet or entered manually</div>
         </div>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-outline" onclick="loadSheet()">🔄 Sync Sheet</button>
-          <button class="btn btn-primary" onclick="openAddBook()">+ Add Book</button>
+          <button class="btn btn-outline" onclick="loadSheet()"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Sync Sheet</button>
+          <button class="btn btn-primary" onclick="openAddBook()"><i data-lucide="plus" style="width:14px;height:14px;"></i> Add Book</button>
         </div>
       </div>
       <div class="card" style="padding:0;">
@@ -722,7 +755,7 @@
           <div class="page-title">Faculty & Departments</div>
           <div class="page-subtitle">Faculty members who receive new arrival alerts</div>
         </div>
-        <button class="btn btn-primary" onclick="openAddFaculty()">+ Add Faculty</button>
+        <button class="btn btn-primary" onclick="openAddFaculty()"><i data-lucide="user-plus" style="width:14px;height:14px;"></i> Add Faculty</button>
       </div>
       <div class="card" style="padding:0;">
         <div class="table-wrapper">
@@ -747,13 +780,13 @@
           <select id="preview-dept" onchange="updatePreview()" style="min-width:160px;">
             <option value="">All Departments</option>
           </select>
-          <button class="btn btn-gold" onclick="openSendModal()">⚡ Send Now</button>
+          <button class="btn btn-gold" onclick="openSendModal()"><i data-lucide="send" style="width:14px;height:14px;"></i> Send Now</button>
         </div>
       </div>
 
       <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('preview')">👁 Email Preview</button>
-        <button class="tab-btn" onclick="switchTab('html')">💻 HTML Source</button>
+        <button class="tab-btn active" onclick="switchTab('preview')"><i data-lucide="eye" style="width:14px;height:14px;"></i> Email Preview</button>
+        <button class="tab-btn" onclick="switchTab('html')"><i data-lucide="code-2" style="width:14px;height:14px;"></i> HTML Source</button>
       </div>
 
       <div class="tab-content active" id="tab-preview">
@@ -777,7 +810,7 @@
           <div class="page-title">Send Logs</div>
           <div class="page-subtitle">History of all notifications dispatched</div>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="clearLogs()">🗑 Clear Logs</button>
+        <button class="btn btn-outline btn-sm" onclick="clearLogs()"><i data-lucide="trash-2" style="width:14px;height:14px;"></i> Clear Logs</button>
       </div>
       <div class="card">
         <div id="log-list">
@@ -800,7 +833,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">📧 Email Configuration (EmailJS)</div>
+        <div class="card-title"><i data-lucide="mail-cog" style="width:16px;height:16px;color:var(--gold);"></i> Email Configuration (EmailJS)</div>
         <div class="alert alert-warning">⚠️ Set up EmailJS (free) to send real emails. Enter your credentials below.</div>
         <div class="form-grid">
           <div class="form-group">
@@ -818,7 +851,7 @@
           </div>
           <div class="form-group full">
             <div id="cfg-save-status"></div>
-            <button class="btn btn-gold" onclick="saveConfigExplicit()">💾 Save EmailJS Credentials</button>
+            <button class="btn btn-gold" onclick="saveConfigExplicit()"><i data-lucide="save" style="width:14px;height:14px;"></i> Save Credentials</button>
           </div>
           <div class="form-group full">
             <label>Library Name (shown in email)</label>
@@ -836,10 +869,10 @@
       </div>
 
       <div class="card">
-        <div class="card-title">⚙️ Notification Preferences</div>
+        <div class="card-title"><i data-lucide="bell-ring" style="width:16px;height:16px;color:var(--gold);"></i> Notification Preferences</div>
         <div class="config-item">
-          <div><div class="config-label">Auto-notify on new book entry</div><div class="config-desc">Send email automatically when a book is added</div></div>
-          <button class="toggle" id="tog-auto" onclick="toggleSetting('auto')"></button>
+          <div><div class="config-label">Auto-notify on new book entry</div><div class="config-desc">Automatically send emails when auto-sync finds new books (requires Auto-Sync to be running on Dashboard)</div></div>
+          <button class="toggle on" id="tog-auto" onclick="toggleSetting('auto')"></button>
         </div>
         <div class="config-item">
           <div><div class="config-label">Include book cover image</div><div class="config-desc">Fetch cover from Open Library/Amazon via ISBN</div></div>
@@ -865,7 +898,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">🔧 Setup in 4 Steps</div>
+        <div class="card-title"><i data-lucide="wrench" style="width:16px;height:16px;color:var(--gold);"></i> Setup in 4 Steps</div>
         <div style="display:grid; gap:1rem;">
           <div style="display:flex; gap:1rem; align-items:flex-start;">
             <div style="width:36px; height:36px; border-radius:50%; background:var(--navy); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">1</div>
@@ -886,7 +919,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title">📋 Google Sheet Format</div>
+        <div class="card-title"><i data-lucide="table" style="width:16px;height:16px;color:var(--gold);"></i> Google Sheet Format</div>
         <div class="alert alert-info">Your sheet should have these column headers in Row 1:</div>
         <div class="table-wrapper">
           <table>
@@ -913,7 +946,7 @@
 <!-- ADD BOOK MODAL -->
 <div class="modal-overlay" id="modal-add-book">
   <div class="modal">
-    <div class="modal-title">📖 Add New Book</div>
+    <div class="modal-title"><i data-lucide="book-plus" style="width:18px;height:18px;"></i> Add New Book</div>
     <button class="modal-close" onclick="closeModal('modal-add-book')">✕</button>
     <div class="form-grid">
       <div class="form-group full">
@@ -969,7 +1002,7 @@
 <!-- ADD FACULTY MODAL -->
 <div class="modal-overlay" id="modal-add-faculty">
   <div class="modal">
-    <div class="modal-title">👩‍🏫 Add Faculty Member</div>
+    <div class="modal-title"><i data-lucide="user-plus" style="width:18px;height:18px;"></i> Add Faculty Member</div>
     <button class="modal-close" onclick="closeModal('modal-add-faculty')">✕</button>
     <div class="form-grid">
       <div class="form-group">
@@ -1009,7 +1042,7 @@
 <!-- SEND MODAL -->
 <div class="modal-overlay" id="modal-send">
   <div class="modal">
-    <div class="modal-title">⚡ Send Notifications</div>
+    <div class="modal-title"><i data-lucide="send" style="width:14px;height:14px;"></i> Send Notifications</div>
     <button class="modal-close" onclick="closeModal('modal-send')">✕</button>
     <div id="send-summary"></div>
     <div class="form-group" style="margin-top:1rem;">
@@ -1072,6 +1105,7 @@ function showPage(id) {
   if(id==='faculty') renderFaculty();
   if(id==='compose') { populateDeptFilter('preview-dept'); updatePreview(); }
   if(id==='settings') loadConfig();
+  setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 30);
 }
 
 // ===== STATS =====
@@ -1084,6 +1118,7 @@ function updateStats() {
   document.getElementById('sb-faculty').textContent = faculty.length;
   document.getElementById('pending-badge').textContent = newBooks.length + ' pending';
   renderDashboardBooks();
+  setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 30);
 }
 
 function renderDashboardBooks() {
@@ -1222,7 +1257,7 @@ function generateEmailHTML(dept) {
            style="width:60px;height:80px;object-fit:cover;border-radius:5px;box-shadow:2px 3px 10px rgba(0,0,0,0.15);flex-shrink:0;background:#e8eef7;"
            onerror="this.style.display='none'">
       <div>
-        <div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;font-weight:700;color:#1a3a5c;margin-bottom:3px;">${b.title}</div>
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:16px;font-weight:700;color:#1a3a5c;margin-bottom:3px;">${b.title}</div>
         <div style="font-size:12px;color:#888;margin-bottom:8px;">${b.author}${b.pub?' · '+b.pub:''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <span style="background:#e8eef7;color:#1a3a5c;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;">${b.dept}</span>
@@ -1236,24 +1271,24 @@ function generateEmailHTML(dept) {
   return `
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <div style="background:#1a3a5c;padding:40px 32px 28px;text-align:center;">
-  <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:8px;font-family:'DM Sans',sans-serif;">📚 ${libname}</div>
-  <div style="font-family:'Playfair Display',Georgia,serif;font-size:30px;font-weight:700;color:white;line-height:1.2;margin-bottom:6px;">New Arrivals</div>
-  <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:rgba(255,255,255,0.75);font-style:italic;margin-bottom:14px;">Humanities &amp; Beyond</div>
-  <span style="background:#c9933a;color:white;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:5px 16px;border-radius:20px;font-family:'DM Sans',sans-serif;">${deptLabel}</span>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:8px;font-family:'Inter',sans-serif;">📚 ${libname}</div>
+  <div style="font-family:'Fraunces',Georgia,serif;font-size:30px;font-weight:700;color:white;line-height:1.2;margin-bottom:6px;">New Arrivals</div>
+  <div style="font-family:'Fraunces',Georgia,serif;font-size:18px;color:rgba(255,255,255,0.75);font-style:italic;margin-bottom:14px;">Humanities &amp; Beyond</div>
+  <span style="background:#c9933a;color:white;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:5px 16px;border-radius:20px;font-family:'Inter',sans-serif;">${deptLabel}</span>
 </div>
-<div style="background:white;padding:24px 32px 16px;font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.8;color:#444;border-bottom:1px solid #f0f0f0;">
+<div style="background:white;padding:24px 32px 16px;font-family:'Inter',sans-serif;font-size:14px;line-height:1.8;color:#444;border-bottom:1px solid #f0f0f0;">
   Dear Faculty Member,<br><br>
   We are pleased to inform you that <strong>${filteredBooks.length} new book${filteredBooks.length!==1?'s have':' has'} arrived</strong> in the <strong>${deptLabel}</strong> section of our library as of ${today}. We hope these additions will enrich your teaching and research.
 </div>
 <div style="background:white;padding:20px 32px;">
-  <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9933a;margin-bottom:14px;font-family:'DM Sans',sans-serif;">New Books This Week</div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9933a;margin-bottom:14px;font-family:'Inter',sans-serif;">New Books This Week</div>
   ${bookItems || '<p style="color:#aaa;font-size:13px;">No new arrivals for this department.</p>'}
 </div>
 ${config.cta!==false ? `
 <div style="text-align:center;padding:20px 32px;background:#f8f7ff;border-top:1px solid #eee;">
-  <a href="${config.url||'#'}" style="display:inline-block;background:#1a3a5c;color:white;padding:12px 30px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;font-family:'DM Sans',sans-serif;">Visit Library Catalog →</a>
+  <a href="${config.url||'#'}" style="display:inline-block;background:#1a3a5c;color:white;padding:12px 30px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;font-family:'Inter',sans-serif;">Visit Library Catalog →</a>
 </div>`:''}
-<div style="background:#f5f5f5;padding:20px 32px;text-align:center;font-size:11px;color:#aaa;font-family:'DM Sans',sans-serif;line-height:1.7;border-top:1px solid #eee;">
+<div style="background:#f5f5f5;padding:20px 32px;text-align:center;font-size:11px;color:#aaa;font-family:'Inter',sans-serif;line-height:1.7;border-top:1px solid #eee;">
   ${libname} &nbsp;|&nbsp; To unsubscribe from these alerts, contact the library.<br>
   This is an automated notification. Please do not reply to this email.
 </div>
@@ -1453,6 +1488,7 @@ function importBooksFromCSV(rows) {
   }
   updateStats();
   renderBooks();
+  if(window.lucide) lucide.createIcons();
   addLog('info', `Sheet sync: ${added} new book(s) imported, ${imported.length - added} duplicate(s) skipped`);
 }
 
@@ -1566,11 +1602,191 @@ function toggleSetting(key) {
   if(key==='cta') { config.cta = settings[key]; updatePreview(); }
 }
 
+// ===== SHEET URL PERSISTENCE =====
+function saveSheetUrl() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) { document.getElementById('sheet-status').innerHTML = '<div class="alert alert-error">❌ Please enter a sheet URL.</div>'; return; }
+  localStorage.setItem('library_sheet_url', url);
+  document.getElementById('sheet-status').innerHTML = '<div class="alert alert-success">✅ Sheet URL saved! You can now start Auto-Sync or click Sync Now.</div>';
+  addLog('info', 'Sheet URL saved: ' + url.substring(0, 60) + '...');
+}
+
+function loadSavedSheetUrl() {
+  const saved = localStorage.getItem('library_sheet_url');
+  if (saved) {
+    document.getElementById('sheet-url').value = saved;
+    document.getElementById('last-sync-info').textContent = 'Sheet URL loaded from memory.';
+  }
+}
+
+// ===== AUTO SYNC ENGINE =====
+let autoSyncTimer = null;
+let autoSyncRunning = false;
+let lastSyncTime = null;
+
+function toggleAutoSync() {
+  if (autoSyncRunning) {
+    stopAutoSync();
+  } else {
+    startAutoSync();
+  }
+}
+
+function startAutoSync() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) {
+    document.getElementById('sheet-status').innerHTML = '<div class="alert alert-error">❌ Please enter and save your Google Sheet URL first.</div>';
+    return;
+  }
+  saveSheetUrl();
+  autoSyncRunning = true;
+  document.getElementById('auto-sync-btn').textContent = '<i data-lucide="stop-circle" style="width:13px;height:13px;"></i> Stop Auto-Sync';
+  document.getElementById('auto-sync-btn').className = 'btn btn-danger-outline btn-sm';
+  document.getElementById('auto-sync-status').innerHTML = '<span style="color:var(--success)">🟢 Running</span>';
+  addLog('info', 'Auto-sync started — checking every ' + document.getElementById('sync-interval').value + ' min');
+  runSyncCycle(); // run immediately
+  scheduleNextSync();
+}
+
+function stopAutoSync() {
+  autoSyncRunning = false;
+  if (autoSyncTimer) { clearTimeout(autoSyncTimer); autoSyncTimer = null; }
+  document.getElementById('auto-sync-btn').textContent = '<i data-lucide="play" style="width:13px;height:13px;"></i> Start Auto-Sync';
+  document.getElementById('auto-sync-btn').className = 'btn btn-gold btn-sm';
+  document.getElementById('auto-sync-status').textContent = '⏸ Stopped';
+  addLog('info', 'Auto-sync stopped.');
+}
+
+function updateSyncInterval() {
+  if (autoSyncRunning) {
+    if (autoSyncTimer) clearTimeout(autoSyncTimer);
+    scheduleNextSync();
+    addLog('info', 'Sync interval updated to ' + document.getElementById('sync-interval').value + ' min');
+  }
+}
+
+function scheduleNextSync() {
+  const mins = parseInt(document.getElementById('sync-interval').value) || 10;
+  autoSyncTimer = setTimeout(() => {
+    if (autoSyncRunning) {
+      runSyncCycle();
+      scheduleNextSync();
+    }
+  }, mins * 60 * 1000);
+}
+
+async function runSyncCycle() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) return;
+  const prevCount = books.length;
+  addLog('info', '🔄 Auto-sync: checking sheet for new books...');
+  await loadSheetSilent(url);
+  const newCount = books.filter(b => b.status === 'new').length;
+  lastSyncTime = new Date();
+  document.getElementById('last-sync-info').textContent =
+    'Last synced: ' + lastSyncTime.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) +
+    ' · ' + books.length + ' total books · ' + newCount + ' pending notifications';
+
+  const added = books.length - prevCount;
+  if (added > 0) {
+    addLog('success', '✅ Auto-sync found ' + added + ' new book(s)!');
+    if (settings.auto) {
+      addLog('info', '📧 Auto-notify triggered — sending emails...');
+      await autoSendNotifications();
+    } else {
+      addLog('info', 'ℹ️ New books added. Auto-notify is off — click Send Notifications to email faculty.');
+    }
+  } else {
+    addLog('info', '✓ Auto-sync complete — no new books found.');
+  }
+}
+
+async function loadSheetSilent(rawUrl) {
+  let csvUrl = '';
+  const match = rawUrl.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+  if (match) {
+    const sheetId = match[1];
+    const gidMatch = rawUrl.match(/[#&?]gid=(\d+)/);
+    const gid = gidMatch ? gidMatch[1] : '0';
+    csvUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv&gid=' + gid;
+  } else if (rawUrl.includes('export?format=csv') || rawUrl.includes('pub?output=csv') || rawUrl.includes('/d/e/')) {
+    csvUrl = rawUrl;
+  } else {
+    addLog('warn', '❌ Invalid sheet URL stored. Please update it on the Dashboard.');
+    return;
+  }
+  const proxyUrl = 'https://script.google.com/macros/s/AKfycbx5SlP33cac3GF-LTOBVPauz6ycyKUm5OLJr7KsLVYLH_ffEF6J69-NfskUDBIh5HN3/exec?url=' + encodeURIComponent(csvUrl);
+  try {
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const text = await response.text();
+    if (!text || text.trim().length === 0) throw new Error('Empty response');
+    if (text.trim().startsWith('<')) throw new Error('Got HTML instead of CSV — check sheet is published');
+    const rows = parseCSV(text);
+    if (rows.length < 1) return;
+    importBooksFromCSV(rows);
+  } catch(err) {
+    addLog('warn', '❌ Sync failed: ' + err.message);
+  }
+}
+
+async function manualSync() {
+  const url = document.getElementById('sheet-url').value.trim();
+  if (!url) { document.getElementById('sheet-status').innerHTML = '<div class="alert alert-error">❌ Please enter a sheet URL.</div>'; return; }
+  saveSheetUrl();
+  document.getElementById('sheet-status').innerHTML = '<div class="alert alert-info">⏳ Syncing...</div>';
+  const prevCount = books.length;
+  await loadSheetSilent(url);
+  const added = books.length - prevCount;
+  lastSyncTime = new Date();
+  document.getElementById('last-sync-info').textContent =
+    'Last synced: ' + lastSyncTime.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) +
+    ' · ' + books.length + ' total books · ' + books.filter(b=>b.status==='new').length + ' pending';
+  document.getElementById('sheet-status').innerHTML = added > 0
+    ? '<div class="alert alert-success">✅ Sync complete — ' + added + ' new book(s) imported!</div>'
+    : '<div class="alert alert-success">✅ Sync complete — no new books found.</div>';
+}
+
+async function autoSendNotifications() {
+  const ejs = config.service && config.template && config.pubkey;
+  if (!ejs) { addLog('warn', '⚠️ Auto-notify skipped — EmailJS credentials not set. Go to Settings.'); return; }
+  emailjs.init(config.pubkey);
+  const newBooks = books.filter(b => b.status === 'new');
+  const depts = [...new Set(newBooks.map(b => b.dept))];
+  for (const dept of depts) {
+    const deptFaculty = faculty.filter(f => f.notify && f.dept === dept);
+    const deptBooks = newBooks.filter(b => b.dept === dept);
+    for (const fac of deptFaculty) {
+      try {
+        await emailjs.send(config.service, config.template, {
+          to_email: fac.email,
+          to_name: fac.name,
+          department: dept,
+          book_count: deptBooks.length,
+          books_html: generateEmailHTML(dept),
+          library_name: config.libname
+        });
+        addLog('success', '📧 Auto-email sent to ' + fac.name + ' (' + fac.email + ') — ' + dept);
+      } catch(e) {
+        addLog('warn', '❌ Auto-email failed for ' + fac.email + ': ' + (e.text || e.message));
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+  newBooks.forEach(b => b.status = 'sent');
+  updateStats();
+  addLog('success', '✅ Auto-notify complete — emails sent for ' + newBooks.length + ' new book(s)');
+}
+
 // ===== INIT =====
 updateStats();
 populateDeptFilter('preview-dept');
 setTimeout(updatePreview, 100);
+loadSavedSheetUrl();
+settings.auto = true; // auto-notify on by default
 addLog('info', 'System ready — ' + books.filter(b=>b.status==='new').length + ' books pending notification');
+// Init Lucide icons
+setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 50);
 </script>
 </body>
 </html>
