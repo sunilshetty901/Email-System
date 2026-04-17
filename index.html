@@ -900,6 +900,24 @@
           <button class="toggle on" id="tog-auto" onclick="toggleSetting('auto')"></button>
         </div>
         <div class="config-item">
+          <div>
+            <div class="config-label">Reset "Seen Books" Tracker</div>
+            <div class="config-desc">Clears the memory of which books have been synced. Next sync will re-detect all sheet books as new.</div>
+          </div>
+          <button class="btn btn-danger-outline btn-sm" onclick="clearSeenBooks()">
+            <i data-lucide="rotate-ccw" style="width:13px;height:13px;"></i> Reset Tracker
+          </button>
+        </div>
+        <div class="config-item">
+          <div>
+            <div class="config-label">Clear All Saved Data</div>
+            <div class="config-desc">Wipes all books, faculty, settings and logs from browser storage. Use this to start completely fresh. Cannot be undone.</div>
+          </div>
+          <button class="btn btn-danger-outline btn-sm" onclick="clearAllData()">
+            <i data-lucide="trash-2" style="width:13px;height:13px;"></i> Clear Everything
+          </button>
+        </div>
+        <div class="config-item">
           <div><div class="config-label">Include book cover image</div><div class="config-desc">Fetch cover from Open Library/Amazon via ISBN</div></div>
           <button class="toggle on" id="tog-cover" onclick="toggleSetting('cover')"></button>
         </div>
@@ -1096,27 +1114,32 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
-// ===== DATA STORE =====
-let books = [
-  { id:1, title:"Attention: Writing on Life, Art and the World", author:"Anne Enright", isbn:"9781324064763", dept:"Humanities", acc:"ACC/2025/001", pub:"Norton", year:2025, date:"2025-04-10", status:"new", cover:"" },
-  { id:2, title:"The Attention Revolution", author:"B. Alan Wallace, Ph.D.", isbn:"9780861712762", dept:"Sciences", acc:"ACC/2025/002", pub:"Wisdom Publications", year:2006, date:"2025-04-11", status:"new", cover:"" },
-  { id:3, title:"Please Pay Attention", author:"Jamie Sumner", isbn:"9781534498952", dept:"Education", acc:"ACC/2025/003", pub:"Atheneum", year:2023, date:"2025-04-12", status:"new", cover:"" },
-  { id:4, title:"Deep Work", author:"Cal Newport", isbn:"9780349411903", dept:"Engineering", acc:"ACC/2025/004", pub:"Piatkus", year:2016, date:"2025-03-01", status:"sent", cover:"" },
-  { id:5, title:"Thinking Fast and Slow", author:"Daniel Kahneman", isbn:"9780374533557", dept:"Sciences", acc:"ACC/2025/005", pub:"Farrar, Straus & Giroux", year:2011, date:"2025-03-05", status:"sent", cover:"" },
-];
-let faculty = [
-  { id:1, name:"Dr. Priya Sharma", email:"priya.sharma@university.edu", dept:"Humanities", desig:"Professor", notify:true },
-  { id:2, name:"Dr. Rohit Mehta", email:"rohit.mehta@university.edu", dept:"Humanities", desig:"Associate Professor", notify:true },
-  { id:3, name:"Dr. Anjali Singh", email:"anjali.singh@university.edu", dept:"Sciences", desig:"Professor", notify:true },
-  { id:4, name:"Dr. Vikram Nair", email:"vikram.nair@university.edu", dept:"Engineering", desig:"HOD", notify:true },
-  { id:5, name:"Dr. Sunita Rao", email:"sunita.rao@university.edu", dept:"Education", desig:"Lecturer", notify:false },
-  { id:6, name:"Dr. Arjun Patel", email:"arjun.patel@university.edu", dept:"Commerce", desig:"Professor", notify:true },
-  { id:7, name:"Dr. Meena Krishnan", email:"meena.k@university.edu", dept:"Arts", desig:"Associate Professor", notify:true },
-  { id:8, name:"Dr. Rahul Gupta", email:"rahul.gupta@university.edu", dept:"Sciences", desig:"Lecturer", notify:true },
-];
-let logs = [];
-let settings = { auto:false, cover:true, group:true, cta:true };
-let config = { service:'', template:'', pubkey:'', libname:'Central University Library', from:'', url:'' };
+// ===== PERSISTENCE HELPERS =====
+function save(key, val) {
+  try { localStorage.setItem('library_' + key, JSON.stringify(val)); } catch(e) {}
+}
+function load(key, fallback) {
+  try {
+    const v = localStorage.getItem('library_' + key);
+    return v !== null ? JSON.parse(v) : fallback;
+  } catch(e) { return fallback; }
+}
+
+// ===== DATA STORE — loaded from localStorage, falls back to empty on first run =====
+let books    = load('books', []);
+let faculty  = load('faculty', []);
+let logs     = load('logs', []);
+let settings = load('settings', { auto:true, cover:true, group:true, cta:true });
+let config   = load('config', { service:'', template:'', pubkey:'', libname:'Central University Library IIT Jammu', from:'', url:'' });
+
+// Auto-save books/faculty/config whenever they change
+function saveAll() {
+  save('books', books);
+  save('faculty', faculty);
+  save('settings', settings);
+  save('config', config);
+  save('logs', logs.slice(0, 100)); // keep last 100 logs only
+}
 
 const COVER_URL = isbn => `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
 const AMAZON_COVER = isbn => `https://images-na.ssl-images-amazon.com/images/P/${isbn}.jpg`;
@@ -1199,14 +1222,14 @@ function addBook() {
   books.push(newBook);
   closeModal('modal-add-book');
   addLog('info', `New book added: "${newBook.title}" — ${newBook.dept}`);
-  updateStats(); renderBooks();
+  updateStats(); renderBooks(); saveAll();
   document.getElementById('book-title').value=''; document.getElementById('book-author').value='';
   document.getElementById('book-isbn').value=''; document.getElementById('book-acc').value='';
 }
 function deleteBook(id) {
   if(!confirm('Remove this book?')) return;
   books = books.filter(b=>b.id!==id);
-  updateStats(); renderBooks();
+  updateStats(); renderBooks(); saveAll();
 }
 
 // ===== FACULTY =====
@@ -1231,7 +1254,7 @@ function renderFaculty() {
 function toggleFacultyNotify(id) {
   const f = faculty.find(x=>x.id===id);
   if(f) f.notify = !f.notify;
-  renderFaculty();
+  renderFaculty(); saveAll();
 }
 function openAddFaculty() { document.getElementById('modal-add-faculty').classList.add('open'); }
 function addFaculty() {
@@ -1242,12 +1265,12 @@ function addFaculty() {
   faculty.push({ id:Date.now(), name, email, dept, desig:document.getElementById('fac-desig').value.trim(), notify:true });
   closeModal('modal-add-faculty');
   addLog('info', `Faculty added: ${name} (${dept})`);
-  updateStats(); renderFaculty();
+  updateStats(); renderFaculty(); saveAll();
 }
 function deleteFaculty(id) {
   if(!confirm('Remove this faculty member?')) return;
   faculty = faculty.filter(f=>f.id!==id);
-  updateStats(); renderFaculty();
+  updateStats(); renderFaculty(); saveAll();
 }
 
 // ===== MODALS =====
@@ -1396,8 +1419,12 @@ async function sendNotifications() {
     }
   }
   newBooks.forEach(b=>b.status='sent');
-  document.getElementById('stat-sent').textContent = parseInt(document.getElementById('stat-sent').textContent||0) + sent;
+  const prevSent = parseInt(document.getElementById('stat-sent').textContent||0);
+  const newSentTotal = prevSent + sent;
+  document.getElementById('stat-sent').textContent = newSentTotal;
+  save('stat_sent', newSentTotal);
   updateStats();
+  saveAll();
   document.getElementById('send-btn').disabled=false;
   closeModal('modal-send');
   addLog('success', `Notification batch complete — ${sent} email(s) sent for ${newBooks.length} book(s)`);
@@ -1448,75 +1475,111 @@ function parseCSV(text) {
   }).filter(Boolean);
 }
 
+// ===== SEEN BOOKS TRACKER (persists across page reloads) =====
+// Stores title|author keys of every book the sheet has ever contained
+// Only books appearing for the FIRST TIME are treated as "new" for notifications
+function getSeenBooks() {
+  try { return new Set(JSON.parse(localStorage.getItem('library_seen_books') || '[]')); }
+  catch(e) { return new Set(); }
+}
+function saveSeenBooks(set) {
+  try { localStorage.setItem('library_seen_books', JSON.stringify([...set])); } catch(e) {}
+}
+function clearSeenBooks() {
+  localStorage.removeItem('library_seen_books');
+  addLog('info', 'Seen-books tracker cleared — next sync will treat all sheet books as new.');
+}
+function clearAllData() {
+  if (!confirm('⚠️ This will delete ALL saved books, faculty, settings and logs. Are you sure?')) return;
+  const keysToKeep = []; // clear everything library-related
+  Object.keys(localStorage).filter(k => k.startsWith('library_')).forEach(k => localStorage.removeItem(k));
+  books = []; faculty = []; logs = [];
+  settings = { auto:true, cover:true, group:true, cta:true };
+  config = { service:'', template:'', pubkey:'', libname:'Central University Library IIT Jammu', from:'', url:'' };
+  updateStats();
+  renderBooks();
+  renderFaculty();
+  loadConfig();
+  addLog('info', 'All data cleared. Fresh start!');
+  alert('✅ All data cleared. The app is now reset to a clean state.');
+}
+
 function importBooksFromCSV(rows) {
-  // Flexible header mapping (case-insensitive, with common aliases)
   const headerMap = {
-    title:       ['title', 'book title', 'booktitle', 'name'],
-    author:      ['author', 'authors', 'writer'],
-    isbn:        ['isbn', 'isbn13', 'isbn-13', 'isbn10', 'isbn-10'],
-    dept:        ['department', 'dept', 'subject', 'category'],
-    acc:         ['accession no', 'accession number', 'acc no', 'acc', 'accno', 'accession'],
-    date:        ['date added', 'date', 'dateadded', 'added on', 'added'],
-    pub:         ['publisher', 'pub', 'publication'],
-    year:        ['year', 'publication year', 'pub year', 'year published'],
-    edition:     ['edition', 'ed'],
+    title:   ['title', 'book title', 'booktitle', 'name'],
+    author:  ['author', 'authors', 'writer'],
+    isbn:    ['isbn', 'isbn13', 'isbn-13', 'isbn10', 'isbn-10'],
+    dept:    ['department', 'dept', 'subject', 'category'],
+    acc:     ['accession no', 'accession number', 'acc no', 'acc', 'accno', 'accession'],
+    date:    ['date added', 'date', 'dateadded', 'added on', 'added'],
+    pub:     ['publisher', 'pub', 'publication'],
+    year:    ['year', 'publication year', 'pub year', 'year published'],
+    edition: ['edition', 'ed'],
   };
 
-  function findCol(headers, aliases) {
-    const lower = headers.map(h => h.toLowerCase());
+  function findCol(hdrs, aliases) {
+    const lower = hdrs.map(h => h.toLowerCase());
     for (const alias of aliases) {
       const idx = lower.findIndex(h => h === alias || h.includes(alias));
-      if (idx !== -1) return headers[idx];
+      if (idx !== -1) return hdrs[idx];
     }
     return null;
   }
 
-  if (!rows || rows.length === 0) return;
-  const headers = Object.keys(rows[0]);
+  if (!rows || rows.length === 0) return [];
+  const hdrs = Object.keys(rows[0]);
   const colMap = {};
   for (const [field, aliases] of Object.entries(headerMap)) {
-    colMap[field] = findCol(headers, aliases);
+    colMap[field] = findCol(hdrs, aliases);
   }
 
-  const imported = rows
-    .map(row => {
-      const title  = colMap.title  ? row[colMap.title]  : '';
-      const author = colMap.author ? row[colMap.author] : '';
-      const dept   = colMap.dept   ? row[colMap.dept]   : '';
-      if (!title) return null; // skip rows with no title
-      return {
-        id:     Date.now() + Math.random(),
-        title,
-        author:  author  || '',
-        isbn:    colMap.isbn    ? row[colMap.isbn]    : '',
-        dept:    dept    || 'General',
-        acc:     colMap.acc     ? row[colMap.acc]     : '',
-        date:    colMap.date    ? row[colMap.date]    : new Date().toISOString().split('T')[0],
-        pub:     colMap.pub     ? row[colMap.pub]     : '',
-        year:    colMap.year    ? row[colMap.year]    : '',
-        edition: colMap.edition ? row[colMap.edition] : '',
-        status:  'new',
-        cover:   '',
-      };
-    })
-    .filter(Boolean);
+  const imported = rows.map(row => {
+    const title  = (colMap.title  ? row[colMap.title]  : '').toString().trim();
+    const author = (colMap.author ? row[colMap.author] : '').toString().trim();
+    const dept   = (colMap.dept   ? row[colMap.dept]   : '').toString().trim();
+    if (!title) return null;
+    return {
+      id:      Date.now() + Math.random(),
+      title,
+      author:  author || '',
+      isbn:    (colMap.isbn    ? row[colMap.isbn]    : '').toString().trim(),
+      dept:    dept || 'General',
+      acc:     (colMap.acc     ? row[colMap.acc]     : '').toString().trim(),
+      date:    (colMap.date    ? row[colMap.date]    : new Date().toISOString().split('T')[0]).toString().trim(),
+      pub:     (colMap.pub     ? row[colMap.pub]     : '').toString().trim(),
+      year:    (colMap.year    ? row[colMap.year]    : '').toString().trim(),
+      edition: (colMap.edition ? row[colMap.edition] : '').toString().trim(),
+      status:  'new',
+      cover:   '',
+    };
+  }).filter(Boolean);
 
-  // Merge: add books that aren't already present (matched by title+author)
-  const existing = new Set(books.map(b => (b.title + '|' + b.author).toLowerCase()));
+  // seenBooks = every title|author key this app has EVER seen from the sheet
+  // A book is "newly added" only if its key is NOT in seenBooks yet
+  const seenBooks = getSeenBooks();
+  const inMemory  = new Set(books.map(b => (b.title + '|' + b.author).toLowerCase()));
   const newlyAdded = [];
+
   for (const book of imported) {
     const key = (book.title + '|' + book.author).toLowerCase();
-    if (!existing.has(key)) {
+    // Always mark as seen (so we never re-notify)
+    seenBooks.add(key);
+    // Only add to books array + newlyAdded if never seen before AND not already in memory
+    if (!inMemory.has(key)) {
       books.push(book);
-      existing.add(key);
+      inMemory.add(key);
       newlyAdded.push(book);
     }
   }
+
+  // Persist updated seen set
+  saveSeenBooks(seenBooks);
+
   updateStats();
   renderBooks();
   if(window.lucide) lucide.createIcons();
   if (newlyAdded.length > 0) {
-    addLog('info', `Sheet sync: ${newlyAdded.length} new book(s) imported (${newlyAdded.map(b=>'"'+b.title+'"').join(', ')}), ${imported.length - newlyAdded.length} duplicate(s) skipped`);
+    addLog('info', `Sheet sync: ${newlyAdded.length} new book(s) detected (${newlyAdded.map(b=>'"'+b.title+'"').join(', ')})`);
   }
   return newlyAdded;
 }
@@ -1582,7 +1645,9 @@ async function loadSheet() {
 // ===== LOGS =====
 function addLog(type, msg) {
   logs.unshift({type, msg, time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
+  if(logs.length > 100) logs = logs.slice(0, 100);
   renderLogs();
+  save('logs', logs);
 }
 function renderLogs() {
   const el = document.getElementById('log-list');
@@ -1594,7 +1659,7 @@ function renderLogs() {
     </div>
   `).join('') || '<div style="color:var(--gray-400);font-size:13px;padding:1rem 0;">No logs yet</div>';
 }
-function clearLogs() { logs=[]; renderLogs(); }
+function clearLogs() { logs=[]; renderLogs(); save('logs', logs); }
 
 // ===== SETTINGS =====
 function saveConfig() {
@@ -1612,6 +1677,7 @@ function saveConfigExplicit() {
   if (ok) {
     statusEl.innerHTML = '<div class="alert alert-success">✅ Credentials saved! Service: <strong>' + config.service + '</strong> · Template: <strong>' + config.template + '</strong> · Key: <strong>' + config.pubkey.substring(0,6) + '...</strong></div>';
     addLog('info', 'EmailJS credentials saved — svc:' + config.service + ' tpl:' + config.template);
+    saveAll();
   } else {
     statusEl.innerHTML = '<div class="alert alert-error">❌ Please fill in all three fields (Service ID, Template ID, Public Key).</div>';
   }
@@ -1629,6 +1695,7 @@ function toggleSetting(key) {
   const btn = document.getElementById('tog-'+key);
   if(settings[key]) btn.classList.add('on'); else btn.classList.remove('on');
   if(key==='cta') { config.cta = settings[key]; updatePreview(); }
+  saveAll();
 }
 
 // ===== FACULTY IMPORT / EXPORT =====
@@ -1934,16 +2001,24 @@ async function autoSendNotifications(targetBooks) {
     // Generate email HTML only for these specific books
     const emailHtml = generateEmailHTMLForBooks(deptBooks, dept);
 
+    // Debug: log first 120 chars of html so we can confirm correct books are in it
+    addLog('info', '📋 Email content preview: ' + emailHtml.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').substring(0,200).trim() + '...');
+
     for (const fac of deptFaculty) {
       try {
-        await emailjs.send(config.service, config.template, {
+        const payload = {
           to_email: fac.email,
           to_name: fac.name,
           department: dept,
           book_count: deptBooks.length,
           books_html: emailHtml,
-          library_name: config.libname
-        });
+          message: emailHtml,        // some templates use {{message}} instead
+          html_content: emailHtml,   // fallback variable name
+          library_name: config.libname,
+          book_titles: deptBooks.map(b => b.title).join(', '),
+        };
+        addLog('info', '📤 Sending payload — books_html length: ' + emailHtml.length + ' chars, books: ' + deptBooks.map(b=>'"'+b.title+'"').join(', '));
+        await emailjs.send(config.service, config.template, payload);
         addLog('success', '📧 Email sent to ' + fac.name + ' (' + fac.email + ') — ' + deptBooks.length + ' book(s) in ' + dept);
         totalSent++;
       } catch(e) {
@@ -2010,13 +2085,35 @@ ${config.cta !== false ? `
 `;
 }
 
-// ===== INIT =====
+// ===== INIT — restore all state from localStorage =====
+// Restore settings toggles
+Object.keys(settings).forEach(key => {
+  const btn = document.getElementById('tog-' + key);
+  if (btn) {
+    if (settings[key]) btn.classList.add('on');
+    else btn.classList.remove('on');
+  }
+});
+
+// Restore config fields
+loadConfig();
+
+// Restore stat-sent count
+const savedSent = load('stat_sent', 0);
+document.getElementById('stat-sent').textContent = savedSent;
+
 updateStats();
 populateDeptFilter('preview-dept');
 setTimeout(updatePreview, 100);
 loadSavedSheetUrl();
-settings.auto = true; // auto-notify on by default
-addLog('info', 'System ready — ' + books.filter(b=>b.status==='new').length + ' books pending notification');
+
+const newCount = books.filter(b=>b.status==='new').length;
+if (books.length > 0) {
+  addLog('info', 'Session restored — ' + books.length + ' book(s), ' + newCount + ' pending · ' + faculty.length + ' faculty member(s)');
+} else {
+  addLog('info', 'System ready — no data yet. Load your Google Sheet or add books manually.');
+}
+
 // Init Lucide icons
 setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 50);
 </script>
