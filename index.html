@@ -817,6 +817,10 @@
             <div class="form-hint">Get these from <strong>emailjs.com</strong> → Account → API Keys (free tier allows 200 emails/month)</div>
           </div>
           <div class="form-group full">
+            <div id="cfg-save-status"></div>
+            <button class="btn btn-gold" onclick="saveConfigExplicit()">💾 Save EmailJS Credentials</button>
+          </div>
+          <div class="form-group full">
             <label>Library Name (shown in email)</label>
             <input type="text" id="cfg-libname" placeholder="Central University Library" value="Central University Library" oninput="saveConfig()">
           </div>
@@ -1308,7 +1312,8 @@ async function sendNotifications() {
       await new Promise(resolve => setTimeout(resolve, 400));
       if(ejs) {
         try {
-          await emailjs.send(config.service, config.template, {
+          addLog('info', `Sending to ${fac.email}... (svc:${config.service} tpl:${config.template})`);
+          const result = await emailjs.send(config.service, config.template, {
             to_email: fac.email,
             to_name: fac.name,
             department: dept,
@@ -1316,12 +1321,12 @@ async function sendNotifications() {
             books_html: generateEmailHTML(dept),
             library_name: config.libname
           });
-          addLog('success', `Email sent to ${fac.name} (${fac.email}) — ${dept}`);
+          addLog('success', `✅ Email sent to ${fac.name} (${fac.email}) — status:${result.status} ${result.text}`);
         } catch(e) {
-          addLog('warn', `Failed to send to ${fac.email}: ${e.text||e}`);
+          addLog('warn', `❌ EmailJS error for ${fac.email}: ${e.text || e.message || JSON.stringify(e)}`);
         }
       } else {
-        addLog('success', `[Demo] Email would be sent to ${fac.name} (${fac.email}) — ${deptBooks.length} books in ${dept}`);
+        addLog('warn', `⚠️ Demo mode — svc:[${config.service}] tpl:[${config.template}] key:[${config.pubkey ? 'SET' : 'MISSING'}]`);
       }
       sent++;
       const pct = Math.round(sent/Math.max(total,1)*100);
@@ -1528,12 +1533,23 @@ function clearLogs() { logs=[]; renderLogs(); }
 
 // ===== SETTINGS =====
 function saveConfig() {
-  config.service = document.getElementById('cfg-service').value;
-  config.template = document.getElementById('cfg-template').value;
-  config.pubkey = document.getElementById('cfg-pubkey').value;
-  config.libname = document.getElementById('cfg-libname').value;
-  config.from = document.getElementById('cfg-from').value;
-  config.url = document.getElementById('cfg-url').value;
+  config.service = document.getElementById('cfg-service').value.trim();
+  config.template = document.getElementById('cfg-template').value.trim();
+  config.pubkey = document.getElementById('cfg-pubkey').value.trim();
+  config.libname = document.getElementById('cfg-libname').value.trim();
+  config.from = document.getElementById('cfg-from').value.trim();
+  config.url = document.getElementById('cfg-url').value.trim();
+}
+function saveConfigExplicit() {
+  saveConfig();
+  const ok = config.service && config.template && config.pubkey;
+  const statusEl = document.getElementById('cfg-save-status');
+  if (ok) {
+    statusEl.innerHTML = '<div class="alert alert-success">✅ Credentials saved! Service: <strong>' + config.service + '</strong> · Template: <strong>' + config.template + '</strong> · Key: <strong>' + config.pubkey.substring(0,6) + '...</strong></div>';
+    addLog('info', 'EmailJS credentials saved — svc:' + config.service + ' tpl:' + config.template);
+  } else {
+    statusEl.innerHTML = '<div class="alert alert-error">❌ Please fill in all three fields (Service ID, Template ID, Public Key).</div>';
+  }
 }
 function loadConfig() {
   document.getElementById('cfg-service').value = config.service;
