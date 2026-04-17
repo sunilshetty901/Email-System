@@ -895,8 +895,19 @@
 
       <div class="card">
         <div class="card-title"><i data-lucide="bell-ring" style="width:16px;height:16px;color:var(--gold);"></i> Notification Preferences</div>
+        <div class="config-item" style="background:var(--gold-light);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;">
+          <div>
+            <div class="config-label" style="color:var(--navy-dark);">📬 Who sends email notifications?</div>
+            <div class="config-desc" id="sender-mode-desc" style="margin-top:4px;font-size:12px;color:var(--gray-600);"></div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button id="sender-browser-btn" class="btn btn-sm" onclick="setSenderMode('browser')" style="font-size:11px;">Browser App</button>
+            <button id="sender-script-btn" class="btn btn-sm" onclick="setSenderMode('script')" style="font-size:11px;">Apps Script</button>
+            <button id="sender-both-btn" class="btn btn-sm" onclick="setSenderMode('both')" style="font-size:11px;">Both</button>
+          </div>
+        </div>
         <div class="config-item">
-          <div><div class="config-label">Auto-notify on new book entry</div><div class="config-desc">Automatically send emails when auto-sync finds new books (requires Auto-Sync to be running on Dashboard)</div></div>
+          <div><div class="config-label">Auto-notify on new book entry</div><div class="config-desc">Automatically send emails when auto-sync finds new books in the browser app (only active when sender mode is "Browser App" or "Both")</div></div>
           <button class="toggle on" id="tog-auto" onclick="toggleSetting('auto')"></button>
         </div>
         <div class="config-item">
@@ -1533,11 +1544,17 @@ function importBooksFromCSV(rows) {
     colMap[field] = findCol(hdrs, aliases);
   }
 
+  // Also detect the Notified column (written by Apps Script)
+  const notifiedCol = findCol(hdrs, ['notified', 'notification sent', 'emailed']);
+
   const imported = rows.map(row => {
     const title  = (colMap.title  ? row[colMap.title]  : '').toString().trim();
     const author = (colMap.author ? row[colMap.author] : '').toString().trim();
     const dept   = (colMap.dept   ? row[colMap.dept]   : '').toString().trim();
     if (!title) return null;
+    // If Apps Script already marked this book as notified → treat as sent
+    const notifiedVal = notifiedCol ? row[notifiedCol].toString().trim().toLowerCase() : '';
+    const alreadyNotified = (notifiedVal === 'yes' || notifiedVal === 'true' || notifiedVal === '1');
     return {
       id:      Date.now() + Math.random(),
       title,
@@ -1549,32 +1566,41 @@ function importBooksFromCSV(rows) {
       pub:     (colMap.pub     ? row[colMap.pub]     : '').toString().trim(),
       year:    (colMap.year    ? row[colMap.year]    : '').toString().trim(),
       edition: (colMap.edition ? row[colMap.edition] : '').toString().trim(),
-      status:  'new',
+      // KEY FIX: if Apps Script already sent notification, mark as 'sent' so browser never re-sends
+      status:  alreadyNotified ? 'sent' : 'new',
       cover:   '',
     };
   }).filter(Boolean);
 
-  // seenBooks = every title|author key this app has EVER seen from the sheet
-  // A book is "newly added" only if its key is NOT in seenBooks yet
+  // seenBooks tracker — browser's own memory of what it has seen
   const seenBooks = getSeenBooks();
   const inMemory  = new Set(books.map(b => (b.title + '|' + b.author).toLowerCase()));
   const newlyAdded = [];
 
   for (const book of imported) {
     const key = (book.title + '|' + book.author).toLowerCase();
-    // Always mark as seen (so we never re-notify)
     seenBooks.add(key);
-    // Only add to books array + newlyAdded if never seen before AND not already in memory
+
     if (!inMemory.has(key)) {
       books.push(book);
       inMemory.add(key);
-      newlyAdded.push(book);
+      // Only treat as newly added if NOT already notified by Apps Script
+      if (book.status === 'new') {
+        newlyAdded.push(book);
+      } else {
+        addLog('info', `"${book.title}" already notified by Apps Script — skipping email`);
+      }
+    } else {
+      // Book already in memory — update its status if Apps Script has since marked it sent
+      const existing = books.find(b => (b.title + '|' + b.author).toLowerCase() === key);
+      if (existing && book.status === 'sent' && existing.status === 'new') {
+        existing.status = 'sent';
+        addLog('info', `"${book.title}" marked as sent (notified by Apps Script)`);
+      }
     }
   }
 
-  // Persist updated seen set
   saveSeenBooks(seenBooks);
-
   updateStats();
   renderBooks();
   if(window.lucide) lucide.createIcons();
@@ -1662,6 +1688,38 @@ function renderLogs() {
 function clearLogs() { logs=[]; renderLogs(); save('logs', logs); }
 
 // ===== SETTINGS =====
+function setSenderMode(mode) {
+  // mode: 'browser' | 'script' | 'both'
+  save('sender_mode', mode);
+  const descriptions = {
+    browser: '🌐 Browser App only — emails sent from this page. Page must stay open. Apps Script still syncs the sheet but does NOT send emails.',
+    script:  '⚙️ Apps Script only — emails sent automatically 24/7 even when browser is closed. Browser app only displays data, never sends emails. (Recommended)',
+    both:    '⚠️ Both — browser AND Apps Script send emails. Risk of duplicate notifications unless the Notified column coordination works perfectly.',
+  };
+  document.getElementById('sender-mode-desc').textContent = descriptions[mode];
+  ['browser','script','both'].forEach(m => {
+    const btn = document.getElementById('sender-' + m + '-btn');
+    if (btn) {
+      btn.className = m === mode ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm';
+      btn.style.fontSize = '11px';
+    }
+  });
+  addLog('info', 'Sender mode set to: ' + mode);
+  // If Apps Script mode, disable auto-notify in browser
+  if (mode === 'script') {
+    settings.auto = false;
+    const btn = document.getElementById('tog-auto');
+    if (btn) btn.classList.remove('on');
+    saveAll();
+    addLog('info', 'Auto-notify disabled in browser — Apps Script will handle all emails.');
+  }
+}
+
+function loadSenderMode() {
+  const mode = load('sender_mode', 'script'); // default to Apps Script
+  setSenderMode(mode);
+}
+
 function saveConfig() {
   config.service = document.getElementById('cfg-service').value.trim();
   config.template = document.getElementById('cfg-template').value.trim();
@@ -1918,7 +1976,10 @@ async function runSyncCycle() {
 
   if (newlyAdded && newlyAdded.length > 0) {
     addLog('success', '✅ Auto-sync found ' + newlyAdded.length + ' new book(s): ' + newlyAdded.map(b => '"' + b.title + '"').join(', '));
-    if (settings.auto) {
+    const senderMode = load('sender_mode', 'script');
+    if (senderMode === 'script') {
+      addLog('info', '📋 New books detected — Apps Script will send emails automatically. Browser email disabled.');
+    } else if (settings.auto && (senderMode === 'browser' || senderMode === 'both')) {
       addLog('info', '📧 Auto-notify triggered — sending emails for newly added books only...');
       await autoSendNotifications(newlyAdded);
     } else {
@@ -2097,6 +2158,7 @@ Object.keys(settings).forEach(key => {
 
 // Restore config fields
 loadConfig();
+loadSenderMode();
 
 // Restore stat-sent count
 const savedSent = load('stat_sent', 0);
