@@ -752,11 +752,36 @@
     <div class="page" id="page-faculty">
       <div class="page-header">
         <div>
-          <div class="page-title">Faculty & Departments</div>
+          <div class="page-title">Faculty &amp; Departments</div>
           <div class="page-subtitle">Faculty members who receive new arrival alerts</div>
         </div>
-        <button class="btn btn-primary" onclick="openAddFaculty()"><i data-lucide="user-plus" style="width:14px;height:14px;"></i> Add Faculty</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="document.getElementById('faculty-file-input').click()">
+            <i data-lucide="upload" style="width:14px;height:14px;"></i> Import CSV / Excel
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="downloadFacultyTemplate()">
+            <i data-lucide="download" style="width:14px;height:14px;"></i> Download Template
+          </button>
+          <button class="btn btn-primary" onclick="openAddFaculty()">
+            <i data-lucide="user-plus" style="width:14px;height:14px;"></i> Add Faculty
+          </button>
+        </div>
       </div>
+
+      <!-- Hidden file input -->
+      <input type="file" id="faculty-file-input" accept=".csv,.xlsx,.xls" style="display:none;" onchange="handleFacultyFileUpload(event)">
+
+      <!-- Import status card -->
+      <div id="faculty-import-card" class="card" style="display:none; margin-bottom:1rem;">
+        <div class="card-title"><i data-lucide="upload" style="width:16px;height:16px;color:var(--gold);"></i> Import Faculty</div>
+        <div id="faculty-import-status"></div>
+        <div style="margin-top:12px; font-size:12px; color:var(--gray-600);">
+          <strong>Expected columns:</strong> Name, Email, Department, Designation (optional)<br>
+          <strong>Supported formats:</strong> .csv, .xlsx, .xls &nbsp;|&nbsp;
+          <a href="#" onclick="downloadFacultyTemplate(); return false;" style="color:var(--navy);">Download sample template</a>
+        </div>
+      </div>
+
       <div class="card" style="padding:0;">
         <div class="table-wrapper">
           <table>
@@ -1069,6 +1094,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 // ===== DATA STORE =====
 let books = [
@@ -1477,19 +1503,22 @@ function importBooksFromCSV(rows) {
 
   // Merge: add books that aren't already present (matched by title+author)
   const existing = new Set(books.map(b => (b.title + '|' + b.author).toLowerCase()));
-  let added = 0;
+  const newlyAdded = [];
   for (const book of imported) {
     const key = (book.title + '|' + book.author).toLowerCase();
     if (!existing.has(key)) {
       books.push(book);
       existing.add(key);
-      added++;
+      newlyAdded.push(book);
     }
   }
   updateStats();
   renderBooks();
   if(window.lucide) lucide.createIcons();
-  addLog('info', `Sheet sync: ${added} new book(s) imported, ${imported.length - added} duplicate(s) skipped`);
+  if (newlyAdded.length > 0) {
+    addLog('info', `Sheet sync: ${newlyAdded.length} new book(s) imported (${newlyAdded.map(b=>'"'+b.title+'"').join(', ')}), ${imported.length - newlyAdded.length} duplicate(s) skipped`);
+  }
+  return newlyAdded;
 }
 
 // ===== SHEET LOADING =====
@@ -1602,6 +1631,140 @@ function toggleSetting(key) {
   if(key==='cta') { config.cta = settings[key]; updatePreview(); }
 }
 
+// ===== FACULTY IMPORT / EXPORT =====
+
+function handleFacultyFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const importCard = document.getElementById('faculty-import-card');
+  const statusEl = document.getElementById('faculty-import-status');
+  importCard.style.display = 'block';
+  statusEl.innerHTML = '<div class="alert alert-info">⏳ Reading file: <strong>' + file.name + '</strong>...</div>';
+
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const rows = parseCSV(text);
+        processFacultyRows(rows, file.name, statusEl);
+      } catch(err) {
+        statusEl.innerHTML = '<div class="alert alert-error">❌ Failed to parse CSV: ' + err.message + '</div>';
+      }
+    };
+    reader.readAsText(file);
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        processFacultyRows(rows, file.name, statusEl);
+      } catch(err) {
+        statusEl.innerHTML = '<div class="alert alert-error">❌ Failed to parse Excel file: ' + err.message + '</div>';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    statusEl.innerHTML = '<div class="alert alert-error">❌ Unsupported file type. Please upload a .csv, .xlsx, or .xls file.</div>';
+  }
+
+  // Reset input so same file can be re-uploaded
+  event.target.value = '';
+}
+
+function processFacultyRows(rows, filename, statusEl) {
+  if (!rows || rows.length === 0) {
+    statusEl.innerHTML = '<div class="alert alert-warning">⚠️ No data rows found in the file.</div>';
+    return;
+  }
+
+  // Flexible column name matching
+  const headers = Object.keys(rows[0]);
+  function findCol(aliases) {
+    const lower = headers.map(h => h.toLowerCase().trim());
+    for (const alias of aliases) {
+      const idx = lower.findIndex(h => h === alias || h.includes(alias));
+      if (idx !== -1) return headers[idx];
+    }
+    return null;
+  }
+
+  const colName  = findCol(['name', 'full name', 'faculty name', 'fullname']);
+  const colEmail = findCol(['email', 'email address', 'mail']);
+  const colDept  = findCol(['department', 'dept', 'division', 'subject']);
+  const colDesig = findCol(['designation', 'title', 'position', 'role', 'post']);
+
+  if (!colName || !colEmail) {
+    statusEl.innerHTML = '<div class="alert alert-error">❌ Could not find required columns.<br>Make sure your file has <strong>Name</strong> and <strong>Email</strong> columns.<br><small>Found columns: ' + headers.join(', ') + '</small></div>';
+    return;
+  }
+
+  const existing = new Set(faculty.map(f => f.email.toLowerCase().trim()));
+  const imported = [];
+  const skipped  = [];
+  const invalid  = [];
+
+  rows.forEach((row, i) => {
+    const name  = (row[colName]  || '').toString().trim();
+    const email = (row[colEmail] || '').toString().trim().toLowerCase();
+    const dept  = colDept  ? (row[colDept]  || '').toString().trim() : '';
+    const desig = colDesig ? (row[colDesig] || '').toString().trim() : '';
+
+    if (!name || !email) { invalid.push('Row ' + (i + 2) + ': missing name or email'); return; }
+    if (!email.includes('@')) { invalid.push('Row ' + (i + 2) + ': invalid email "' + email + '"'); return; }
+    if (existing.has(email)) { skipped.push(name + ' (' + email + ')'); return; }
+
+    faculty.push({ id: Date.now() + Math.random(), name, email, dept: dept || 'General', desig, notify: true });
+    existing.add(email);
+    imported.push(name);
+  });
+
+  updateStats();
+  renderFaculty();
+  if(window.lucide) lucide.createIcons();
+
+  let html = '';
+  if (imported.length > 0) {
+    html += '<div class="alert alert-success">✅ Imported <strong>' + imported.length + '</strong> faculty member(s) from <em>' + filename + '</em>.</div>';
+    addLog('success', 'Faculty import: ' + imported.length + ' added from ' + filename + ' (' + imported.slice(0,3).join(', ') + (imported.length > 3 ? '...' : '') + ')');
+  }
+  if (skipped.length > 0) {
+    html += '<div class="alert alert-warning" style="margin-top:6px;">⚠️ <strong>' + skipped.length + '</strong> duplicate(s) skipped (email already exists).</div>';
+  }
+  if (invalid.length > 0) {
+    html += '<div class="alert alert-error" style="margin-top:6px;">❌ <strong>' + invalid.length + '</strong> row(s) skipped: ' + invalid.join('; ') + '</div>';
+  }
+  if (imported.length === 0 && skipped.length === 0) {
+    html = '<div class="alert alert-warning">⚠️ No new faculty members were imported.</div>';
+  }
+  statusEl.innerHTML = html;
+}
+
+function downloadFacultyTemplate() {
+  // Build a sample CSV template
+  const headers = ['Name', 'Email', 'Department', 'Designation'];
+  const samples = [
+    ['Dr. Priya Sharma', 'priya.sharma@university.edu', 'Humanities', 'Professor'],
+    ['Dr. Rohit Mehta', 'rohit.mehta@university.edu', 'Sciences', 'Associate Professor'],
+    ['Dr. Anjali Singh', 'anjali.singh@university.edu', 'Engineering', 'HOD'],
+  ];
+  const csvContent = [headers, ...samples].map(row => row.map(v => '"' + v + '"').join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'faculty_template.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  addLog('info', 'Faculty import template downloaded.');
+}
+
 // ===== SHEET URL PERSISTENCE =====
 function saveSheetUrl() {
   const url = document.getElementById('sheet-url').value.trim();
@@ -1678,21 +1841,19 @@ function scheduleNextSync() {
 async function runSyncCycle() {
   const url = document.getElementById('sheet-url').value.trim();
   if (!url) return;
-  const prevCount = books.length;
   addLog('info', '🔄 Auto-sync: checking sheet for new books...');
-  await loadSheetSilent(url);
-  const newCount = books.filter(b => b.status === 'new').length;
+  const newlyAdded = await loadSheetSilent(url);
+  const pendingCount = books.filter(b => b.status === 'new').length;
   lastSyncTime = new Date();
   document.getElementById('last-sync-info').textContent =
     'Last synced: ' + lastSyncTime.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}) +
-    ' · ' + books.length + ' total books · ' + newCount + ' pending notifications';
+    ' · ' + books.length + ' total books · ' + pendingCount + ' pending notifications';
 
-  const added = books.length - prevCount;
-  if (added > 0) {
-    addLog('success', '✅ Auto-sync found ' + added + ' new book(s)!');
+  if (newlyAdded && newlyAdded.length > 0) {
+    addLog('success', '✅ Auto-sync found ' + newlyAdded.length + ' new book(s): ' + newlyAdded.map(b => '"' + b.title + '"').join(', '));
     if (settings.auto) {
-      addLog('info', '📧 Auto-notify triggered — sending emails...');
-      await autoSendNotifications();
+      addLog('info', '📧 Auto-notify triggered — sending emails for newly added books only...');
+      await autoSendNotifications(newlyAdded);
     } else {
       addLog('info', 'ℹ️ New books added. Auto-notify is off — click Send Notifications to email faculty.');
     }
@@ -1723,10 +1884,12 @@ async function loadSheetSilent(rawUrl) {
     if (!text || text.trim().length === 0) throw new Error('Empty response');
     if (text.trim().startsWith('<')) throw new Error('Got HTML instead of CSV — check sheet is published');
     const rows = parseCSV(text);
-    if (rows.length < 1) return;
-    importBooksFromCSV(rows);
+    if (rows.length < 1) return [];
+    const newlyAdded = importBooksFromCSV(rows);
+    return newlyAdded || [];
   } catch(err) {
     addLog('warn', '❌ Sync failed: ' + err.message);
+    return [];
   }
 }
 
@@ -1747,15 +1910,30 @@ async function manualSync() {
     : '<div class="alert alert-success">✅ Sync complete — no new books found.</div>';
 }
 
-async function autoSendNotifications() {
+async function autoSendNotifications(targetBooks) {
   const ejs = config.service && config.template && config.pubkey;
   if (!ejs) { addLog('warn', '⚠️ Auto-notify skipped — EmailJS credentials not set. Go to Settings.'); return; }
   emailjs.init(config.pubkey);
-  const newBooks = books.filter(b => b.status === 'new');
-  const depts = [...new Set(newBooks.map(b => b.dept))];
+
+  // Use only the specifically provided newly-added books, not all pending books
+  const booksToNotify = targetBooks || books.filter(b => b.status === 'new');
+  if (booksToNotify.length === 0) { addLog('info', 'No books to notify about.'); return; }
+
+  const depts = [...new Set(booksToNotify.map(b => b.dept))];
+  let totalSent = 0;
+
   for (const dept of depts) {
     const deptFaculty = faculty.filter(f => f.notify && f.dept === dept);
-    const deptBooks = newBooks.filter(b => b.dept === dept);
+    const deptBooks = booksToNotify.filter(b => b.dept === dept);
+
+    if (deptFaculty.length === 0) {
+      addLog('warn', `⚠️ No faculty found for department "${dept}" — skipping ${deptBooks.length} book(s)`);
+      continue;
+    }
+
+    // Generate email HTML only for these specific books
+    const emailHtml = generateEmailHTMLForBooks(deptBooks, dept);
+
     for (const fac of deptFaculty) {
       try {
         await emailjs.send(config.service, config.template, {
@@ -1763,19 +1941,73 @@ async function autoSendNotifications() {
           to_name: fac.name,
           department: dept,
           book_count: deptBooks.length,
-          books_html: generateEmailHTML(dept),
+          books_html: emailHtml,
           library_name: config.libname
         });
-        addLog('success', '📧 Auto-email sent to ' + fac.name + ' (' + fac.email + ') — ' + dept);
+        addLog('success', '📧 Email sent to ' + fac.name + ' (' + fac.email + ') — ' + deptBooks.length + ' book(s) in ' + dept);
+        totalSent++;
       } catch(e) {
-        addLog('warn', '❌ Auto-email failed for ' + fac.email + ': ' + (e.text || e.message));
+        addLog('warn', '❌ Email failed for ' + fac.email + ': ' + (e.text || e.message));
       }
       await new Promise(r => setTimeout(r, 500));
     }
   }
-  newBooks.forEach(b => b.status = 'sent');
+
+  // Mark only these specific books as sent
+  const sentIds = new Set(booksToNotify.map(b => b.id));
+  books.forEach(b => { if (sentIds.has(b.id)) b.status = 'sent'; });
   updateStats();
-  addLog('success', '✅ Auto-notify complete — emails sent for ' + newBooks.length + ' new book(s)');
+  addLog('success', '✅ Auto-notify complete — ' + totalSent + ' email(s) sent for ' + booksToNotify.length + ' book(s): ' + booksToNotify.map(b=>'"'+b.title+'"').join(', '));
+}
+
+// Generate email HTML for a specific list of books (not all pending)
+function generateEmailHTMLForBooks(specificBooks, dept) {
+  const libname = config.libname || 'Central University Library';
+  const deptLabel = dept || 'General';
+  const today = new Date().toLocaleDateString('en-IN', {day:'numeric', month:'long', year:'numeric'});
+
+  const bookItems = specificBooks.map(b => `
+    <div style="display:flex;gap:14px;padding:14px;border:1px solid #f0f0f0;border-radius:10px;margin-bottom:12px;background:#fafafa;align-items:flex-start;">
+      <img src="${b.isbn ? COVER_URL(b.isbn) : ''}"
+           style="width:60px;height:80px;object-fit:cover;border-radius:5px;box-shadow:2px 3px 10px rgba(0,0,0,0.15);flex-shrink:0;background:#e8eef7;"
+           onerror="this.style.display='none'">
+      <div>
+        <div style="font-family:'Fraunces',Georgia,serif;font-size:16px;font-weight:700;color:#1a3a5c;margin-bottom:3px;">${b.title}</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px;">${b.author}${b.pub ? ' · ' + b.pub : ''}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span style="background:#e8eef7;color:#1a3a5c;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;">${b.dept}</span>
+          ${b.acc ? `<span style="background:#e8eef7;color:#1a3a5c;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;">Acc: ${b.acc}</span>` : ''}
+          ${b.isbn ? `<span style="background:#e8eef7;color:#1a3a5c;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;">ISBN: ${b.isbn}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<div style="background:#1a3a5c;padding:40px 32px 28px;text-align:center;">
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:8px;font-family:'Inter',sans-serif;">📚 ${libname}</div>
+  <div style="font-family:'Fraunces',Georgia,serif;font-size:30px;font-weight:900;color:white;line-height:1.2;margin-bottom:6px;">New Arrivals</div>
+  <div style="font-family:'Fraunces',Georgia,serif;font-size:18px;color:rgba(255,255,255,0.75);font-style:italic;margin-bottom:14px;">Fresh additions to the collection</div>
+  <span style="background:#c9933a;color:white;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:5px 16px;border-radius:20px;font-family:'Inter',sans-serif;">${deptLabel}</span>
+</div>
+<div style="background:white;padding:24px 32px 16px;font-family:'Inter',sans-serif;font-size:14px;line-height:1.8;color:#444;border-bottom:1px solid #f0f0f0;">
+  Dear Faculty Member,<br><br>
+  We are pleased to inform you that <strong>${specificBooks.length} new book${specificBooks.length !== 1 ? 's have' : ' has'} arrived</strong> in the <strong>${deptLabel}</strong> section of our library as of ${today}. We hope these additions will enrich your teaching and research.
+</div>
+<div style="background:white;padding:20px 32px;">
+  <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c9933a;margin-bottom:14px;font-family:'Inter',sans-serif;">New Books This Week</div>
+  ${bookItems || '<p style="color:#aaa;font-size:13px;">No books to display.</p>'}
+</div>
+${config.cta !== false ? `
+<div style="text-align:center;padding:20px 32px;background:#f8f7ff;border-top:1px solid #eee;">
+  <a href="${config.url || '#'}" style="display:inline-block;background:#1a3a5c;color:white;padding:12px 30px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;font-family:'Inter',sans-serif;">Visit Library Catalog →</a>
+</div>` : ''}
+<div style="background:#f5f5f5;padding:20px 32px;text-align:center;font-size:11px;color:#aaa;font-family:'Inter',sans-serif;line-height:1.7;border-top:1px solid #eee;">
+  ${libname} &nbsp;|&nbsp; To unsubscribe from these alerts, contact the library.<br>
+  This is an automated notification. Please do not reply to this email.
+</div>
+`;
 }
 
 // ===== INIT =====
